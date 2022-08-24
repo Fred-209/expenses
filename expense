@@ -118,7 +118,9 @@ class ExpenseData
   def list_expenses
     sql = "SELECT * FROM expenses ORDER BY created_on ASC;"
     result = @db_connection.exec(sql)
-    display_expenses(result)
+
+    display_count(result)
+    display_expenses(result) if get_expense_count(result) > 0
   end
 
   def search_expenses(search_term)
@@ -128,15 +130,19 @@ class ExpenseData
       "
 
     result = @db_connection.exec_params(sql, ["%#{search_term}%"] )
-    display_expenses(result)
+    display_count(result)
+    display_expenses(result) if get_expense_count(result) > 0
   end
 
   private
 
-  def display_expenses(expenses)
-    abort "No expenses to display" if expenses.ntuples == 0
+  def calculate_total(expenses)
+    expenses.field_values('amount').map(&:to_f).sum.round(2)
+  end
 
+  def display_expenses(expenses)
     rows = []
+    total_amount = calculate_total(expenses)
     expenses.each do |tuple|
       columns =[
         tuple["id"].rjust(3),
@@ -146,10 +152,25 @@ class ExpenseData
       ]
     rows << columns.join(" | ")
     end
-  
-    puts "Expenses".center(40)
-    rows.each { |row| puts row }
-    puts
+    
+        rows.each { |row| puts row }
+    puts '-' * 80
+    print "Total".ljust(18)
+    puts "#{total_amount}".rjust(13)
+  end
+
+  def display_count(result)
+    expense_count = get_expense_count(result)
+
+    if expense_count > 0
+      puts "There #{expense_count == 1 ? 'is' : 'are' } #{expense_count} expense#{'s' if expense_count > 1}."
+    else
+      puts "There are no expenses."
+    end
+  end
+
+  def get_expense_count(result)
+    result.ntuples
   end
 
 end
