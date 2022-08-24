@@ -115,6 +115,24 @@ class ExpenseData
     end
   end
 
+  def list_expenses
+    sql = "SELECT * FROM expenses ORDER BY created_on ASC;"
+    result = @db_connection.exec(sql)
+    display_expenses(result)
+  end
+
+  def search_expenses(search_term)
+    sql = "
+      SELECT * FROM #{EXPENSE_TABLE}
+      WHERE memo ILIKE $1;
+      "
+
+    result = @db_connection.exec_params(sql, ["%#{search_term}%"] )
+    display_expenses(result)
+  end
+
+  private
+
   def display_expenses(expenses)
     abort "No expenses to display" if expenses.ntuples == 0
 
@@ -134,21 +152,6 @@ class ExpenseData
     puts
   end
 
-  def list_expenses
-    sql = "SELECT * FROM expenses ORDER BY created_on ASC;"
-    result = @db_connection.exec(sql)
-    display_expenses(result)
-  end
-
-  def search_expenses(search_term)
-    sql = "
-      SELECT * FROM #{EXPENSE_TABLE}
-      WHERE memo ILIKE $1;
-      "
-
-    result = @db_connection.exec_params(sql, ["%#{search_term}%"] )
-    display_expenses(result)
-  end
 end
 
 CLI.new.run(ARGV)
