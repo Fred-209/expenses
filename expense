@@ -72,6 +72,7 @@ class ExpenseData
 
   def initialize
     @db_connection = PG.connect(dbname: DB_NAME)
+    setup_schema
   end
 
   def add_expense(amount, memo)
@@ -173,6 +174,22 @@ class ExpenseData
     result.ntuples
   end
 
+  def setup_schema
+    sql = 
+    "SELECT COUNT(*) FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = 'expenses';"
+    
+    if @db_connection.exec(sql).first["count"] == "0"
+      @db_connection.exec <<-SQL
+        CREATE TABLE expenses (
+          id serial PRIMARY KEY,
+          amount numeric(6, 2) NOT NULL CHECK (amount >= 0.01),
+          memo text NOT NULL,
+          created_on date NOT NULL
+        );
+      SQL
+    end
+  end
 end
 
 CLI.new.run(ARGV)
